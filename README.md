@@ -4,7 +4,7 @@ Check for changes on list of urls of career pages (or just pages in general)
 ## Installation
 1. clone and cd into the directory
 1. `pip install -r requirements.txt`
-1. [Download the appropriate version of Chromedriver] (https://sites.google.com/a/chromium.org/chromedriver/downloads)
+1. [Download the appropriate version of Chromedriver](https://sites.google.com/a/chromium.org/chromedriver/downloads)
     1. Unzip and move the chromedriver executable to the jobsearch directory
     1. You might get an error like `Error: “chromedriver” cannot be opened because the developer cannot be verified. Unable to launch the chrome browser`. If so, try [this solution from StackOverflow](https://stackoverflow.com/a/60374958/190902).
 
@@ -29,4 +29,4 @@ To see what files are being skipped:
 
     git ls-files -v . | grep ^S
 
-_[Source]_(https://stackoverflow.com/a/39776107/190902)
+_[Source](https://stackoverflow.com/a/39776107/190902)_
