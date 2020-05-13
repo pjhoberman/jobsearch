@@ -11,7 +11,7 @@ def get_site_text(url):
 
     driver = webdriver.Chrome("./chromedriver",
                               options=chrome_options)
-
+    driver.implicitly_wait(5)
     driver.get(url)
     text = driver.find_element_by_tag_name("body").text
     driver.close()
