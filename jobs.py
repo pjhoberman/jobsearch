@@ -90,6 +90,13 @@ def check_sites():
         print("### ", site.url, " ###")
         print(site.diff)
 
+    print("---")
+    print("{} sites loaded.\n{} sites checked.\n{} sites changed".format(
+        len(urls),
+        len(sites),
+        len([site for site in sites if site.diff])
+    ))
+
 
 if __name__ == '__main__':
     check_sites()
