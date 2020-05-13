@@ -1,59 +1,60 @@
 import multiprocessing as mp
-import difflib
 import json
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
+import requests
+from bs4 import BeautifulSoup
+
+jobs_json = None
+user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.47 Safari/537.36'
+headers = {'User-Agent': user_agent, "Content-Type": "text/html"}
 
 
 def get_site_text(url):
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        print("{}: {}".format(response.status_code, url))
+        return response.status_code
 
-    driver = webdriver.Chrome("./chromedriver",
-                              options=chrome_options)
-    driver.implicitly_wait(5)
-    driver.get(url)
-    text = driver.find_element_by_tag_name("body").text
-    driver.close()
-    return text
+    soup = BeautifulSoup(response.text, 'html.parser')
+    return list(soup.stripped_strings)
 
 
 def create_readable_diff(a, b):
-    change = ""
-    diff = list(difflib.ndiff(a, b))
-    x, y = [l[-1] for l in diff], ["{}{}".format(l[0], l[-1] if l[-1] == "\n" else "") for l in diff]
-    xx = "".join(x)
-    yy = "".join(y)
-    for line1, line2 in zip(xx.split("\n"), yy.split("\n")):
-        # Only show lines that are changed. line2 will be a bunch of spaces if no change
-        if line2.strip() != "":
-            change += line1 + "\n"
-            change += line2 + "\n"
-    return change
+    diffs = [{"-": p[0], "+": p[1]} for p in zip(a, b) if p[0] != p[1]]
+    if len(a) > len(b):
+        diffs += [{"-": x, "+": ""} for x in a[len(b) - len(a):]]
+    elif len(b) > len(a):
+        diffs += [{"-": x, "+": ""} for x in b[len(a) - len(b):]]
+    return diffs
 
 
 def check_site(url):
-    with open("jobs.json", "r") as file:
-        j = json.loads(file.read())
+    global jobs_json
 
     text = get_site_text(url)
-    x = {"url": url, "diff": None}
-    if j.get(url) and j.get(url) != text:
-        x['diff'] = create_readable_diff(j.get(url), text)
-    j[url] = text
+    diff = {"url": url, "diff": None}
+    if jobs_json.get(url) and jobs_json.get(url) != text:
+        x['diff'] = create_readable_diff(jobs_json.get(url), text)
+    jobs_json[url] = text
 
-    with open("jobs.json", "w") as file:
-        file.write(json.dumps(j))
-
-    return x
+    return diff
 
 
 def check_sites():
-    with open("urls.txt", "r") as file:
+    global jobs_json
+    with open("urls.txt", "r") as file, open("jobs.json", "r") as j:
         urls = [line.strip() for line in file]
-    pool = mp.Pool(mp.cpu_count())
-    changed = pool.map(check_site, urls)
-    pool.close()
+        jobs_json = json.loads(j.read())
+
+    # Removed for now - need to figure out global vars with multiprocessing, or some other solution
+    # pool = mp.Pool(mp.cpu_count())
+    # changed = pool.map(check_site, urls)
+    # pool.close()
+    changed = []
+    for url in urls:
+        changed.append(check_site(url))
+
+    with open("jobs.json", "w") as file:
+        file.write(json.dumps(jobs_json))
 
     for change in changed:
         print("### ", change['url'], " ###")
