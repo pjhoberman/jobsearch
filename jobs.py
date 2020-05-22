@@ -2,6 +2,7 @@ import multiprocessing as mp
 import json
 import requests
 from bs4 import BeautifulSoup
+import difflib
 
 USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) ' \
              'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.47 Safari/537.36'
@@ -20,9 +21,11 @@ class Site:
         self._new_text = None
         self._old_text = None
         self.diff = None
+        self.new_diff = None
 
         if self.old_text and self.old_text != self.new_text:
             self.create_readable_diff()
+            self.create_different_diff()
 
     @property
     def old_text(self):
@@ -68,6 +71,13 @@ class Site:
         self.diff = diffs
         return diffs
 
+    def create_different_diff(self):
+        a = self.old_text
+        b = self.new_text
+        d = difflib.Differ()
+        self.new_diff = "\n".join([line for line in d.compare(a, b) if line[0] in ["+", "-", "?"]])
+        return "\n".join([line for line in d.compare(a, b) if line[0] in ["+", "-", "?"]])
+
 
 def check_sites():
     """
@@ -87,8 +97,9 @@ def check_sites():
         file.write(json.dumps({site.url: site.new_text for site in sites}))
 
     for site in sites:
-        print("### ", site.url, " ###")
-        print(site.diff)
+        if site.new_diff:
+            print("### ", site.url, " ###")
+            print(site.new_diff)
 
     print("---")
     print("{} sites loaded.\n{} sites checked.\n{} sites changed".format(
